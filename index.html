@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Алабуга Канцелярия AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 25px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #00d4ff;
+        }
+        .step-num {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        textarea, input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            color: #fff;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+        input { min-height: 50px; }
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            color: #fff;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-mic {
+            background: rgba(255,0,85,0.2);
+            border: 2px solid #ff0055;
+            color: #ff0055;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-mic.recording {
+            background: #ff0055;
+            color: #fff;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .result {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid #00d4ff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        .result.show { display: block; }
+        .reg-number {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #00d4ff;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .pdf-preview {
+            background: #fff;
+            color: #000;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+            min-height: 300px;
+            font-family: 'Times New Roman', serif;
+        }
+        .pdf-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        .pdf-reg {
+            text-align: right;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+        .pdf-content {
+            line-height: 1.6;
+            text-align: justify;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .history-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        .badge-zayavka { background: #ff0055; }
+        .badge-prikaz { background: #00d4ff; }
+        .badge-otchet { background: #7b2cbf; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏭 АЛАБУГА КАНЦЕЛЯРИЯ</h1>
+        <p class="subtitle">Голос → AI → Рег.номер → PDF</p>
+
+        <div class="card" id="step1">
+            <div class="step">
+                <div class="step-num">1</div>
+                <span>Диктуйте или введите текст письма</span>
+            </div>
+            <button class="btn btn-mic" id="micBtn" onclick="toggleRecord()">
+                🎙️ НАЖМИТЕ И ГОВОРИТЕ
+            </button>
+            <textarea id="inputText" placeholder="Текст письма появится здесь..."></textarea>
+        </div>
+
+        <div class="card hidden" id="step2">
+            <div class="step">
+                <div class="step-num">2</div>
+                <span>AI анализирует и присваивает номер</span>
+            </div>
+            <div id="analysisResult"></div>
+            <button class="btn btn-primary" onclick="processLetter()">
+                ⚡ ОБРАБОТАТЬ И ЗАРЕГИСТРИРОВАТЬ
+            </button>
+        </div>
+
+        <div class="card hidden" id="step3">
+            <div class="step">
+                <div class="step-num">3</div>
+                <span>Результат</span>
+            </div>
+            <div class="result show" id="resultBox">
+                <div>Регистрационный номер:</div>
+                <div class="reg-number" id="regNum">-</div>
+                <div id="letterType"></div>
+            </div>
+            <button class="btn btn-primary" onclick="generatePDF()">
+                📄 СГЕНЕРИРОВАТЬ PDF
+            </button>
+            <div id="pdfContainer"></div>
+        </div>
+
+        <div class="card">
+            <div class="step">
+                <div class="step-num">📋</div>
+                <span>История регистраций</span>
+            </div>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        let registry = JSON.parse(localStorage.getItem('alabugha_registry') || '{"last":0,"letters":[]}');
+        let currentLetter = null;
+        let recognition = null;
+
+        function toggleRecord() {
+            const btn = document.getElementById('micBtn');
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Голосовой ввод не поддерживается. Введите текст вручную.');
+                return;
+            }
+
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                btn.classList.remove('recording');
+                btn.innerHTML = '🎙️ НАЖМИТЕ И ГОВОРИТЕ';
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = (e) => {
+                let text = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    text += e.results[i][0].transcript;
+                }
+                document.getElementById('inputText').value = text;
+            };
+
+            recognition.onend = () => {
+                btn.classList.remove('recording');
+                btn.innerHTML = '🎙️ НАЖМИТЕ И ГОВОРИТЕ';
+                recognition = null;
+            };
+
+            recognition.start();
+            btn.classList.add('recording');
+            btn.innerHTML = '⏹️ СТОП ЗАПИСЬ';
+        }
+
+        function analyzeText(text) {
+            const lower = text.toLowerCase();
+            let type = 'общий';
+            let typeClass = '';
+            
+            if (lower.includes('заявление')) { type = 'заявление'; typeClass = 'badge-zayavka'; }
+            else if (lower.includes('приказ')) { type = 'приказ'; typeClass = 'badge-prikaz'; }
+            else if (lower.includes('отчёт') || lower.includes('отчет')) { type = 'отчёт'; typeClass = 'badge-otchet'; }
+            else if (lower.includes('запрос')) { type = 'запрос'; typeClass = 'badge-zayavka'; }
+            
+            const subject = text.split('.')[0].substring(0, 100) || 'Без темы';
+            
+            return { type, typeClass, subject, content: text };
+        }
+
+        function processLetter() {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) {
+                alert('Введите текст письма!');
+                return;
+            }
+
+            const analysis = analyzeText(text);
+            registry.last++;
+            const year = new Date().getFullYear();
+            const regNum = `Исх.-${registry.last}-${year}`;
+            
+            currentLetter = {
+                reg_number: regNum,
+                date: new Date().toISOString(),
+                type: analysis.type,
+                subject: analysis.subject,
+                content: text
+            };
+            
+            registry.letters.push(currentLetter);
+            localStorage.setItem('alabugha_registry', JSON.stringify(registry));
+
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            document.getElementById('regNum').textContent = regNum;
+            document.getElementById('letterType').innerHTML = 
+                `Тип: <span class="badge ${analysis.typeClass}">${analysis.type}</span>`;
+            
+            updateHistory();
+        }
+
+        function generatePDF() {
+            if (!currentLetter) return;
+            
+            const date = new Date(currentLetter.date).toLocaleDateString('ru-RU');
+            const html = `
+                <div class="pdf-preview" id="pdfContent">
+                    <div class="pdf-header">ОЭЗ АЛАБУГА</div>
+                    <div class="pdf-reg">
+                        Исходящее № ${currentLetter.reg_number}<br>
+                        от ${date}
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <b>Тип документа:</b> ${currentLetter.type}<br>
+                        <b>Тема:</b> ${currentLetter.subject}
+                    </div>
+                    <div class="pdf-content">
+                        ${currentLetter.content.replace(/\n/g, '<br>')}
+                    </div>
+                    <div style="margin-top:50px; text-align:right;">
+                        ___________________<br>
+                        Подпись
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pdfContainer').innerHTML = html;
+            
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+
+        function updateHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = registry.letters.slice(-10).reverse().map(l => {
+                const d = new Date(l.date).toLocaleDateString('ru-RU');
+                let cls = '';
+                if (l.type === 'заявление') cls = 'badge-zayavka';
+                else if (l.type === 'приказ') cls = 'badge-prikaz';
+                else if (l.type === 'отчёт') cls = 'badge-otchet';
+                
+                return `
+                    <div class="history-item" onclick="loadLetter('${l.reg_number}')">
+                        <b>${l.reg_number}</b> 
+                        <span class="badge ${cls}">${l.type}</span><br>
+                        <small>${d} — ${l.subject}</small>
+                    </div>
+                `;
+            }).join('') || '<p style="color:#888;text-align:center;">Нет записей</p>';
+        }
+
+        function loadLetter(regNum) {
+            const letter = registry.letters.find(l => l.reg_number === regNum);
+            if (letter) {
+                document.getElementById('inputText').value = letter.content;
+                currentLetter = letter;
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+                document.getElementById('regNum').textContent = letter.reg_number;
+            }
+        }
+
+        document.getElementById('inputText').addEventListener('input', () => {
+            document.getElementById('step2').classList.remove('hidden');
+        });
+
+        updateHistory();
+    </script>
+</body>
+</html>
